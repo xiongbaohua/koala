@@ -109,7 +109,6 @@ private:
 
 };
 
-
 } // namespace kutil
 
 #endif
