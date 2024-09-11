@@ -15,17 +15,17 @@ namespace kutil {
  * A simple thread pool, all threads share from a global task queue, 
  * and fetch task from it.
  */
-class SimpleThreadPool {
+class GlobalQueueThreadPool {
 public:
     using Task = std::function<void()>;
 
-    SimpleThreadPool(size_t num_threads) : _stop(false) {
+    GlobalQueueThreadPool(size_t num_threads) : _stop(false) {
         for (int i = 0; i < num_threads; i++) {
-            _workers.emplace_back(&SimpleThreadPool::do_work, this);
+            _workers.emplace_back(&GlobalQueueThreadPool::do_work, this);
         }
     }
 
-    ~SimpleThreadPool() {
+    ~GlobalQueueThreadPool() {
         if (!_stop) {
             shut_down();
         }
