@@ -6,12 +6,9 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <random>
 
 namespace kutil {
-// max level of skip list
-const int SKIPLIST_MAXLEVEL = 32;
-// random number probability
-const float SKIPLIST_P = 0.25;
 
 // a skip list 
 template<typename _T>
@@ -26,7 +23,7 @@ public:
     };
     typedef std::shared_ptr<Node> NodePtr;
     // constructor
-    SkipList();
+    SkipList(uint32_t max_level = 32, float p = 0.25f);
     // deconstructor
     ~SkipList();
     // find node
@@ -39,18 +36,21 @@ public:
     void print();
     
 private:
-    NodePtr _header;
-    int _level;
     // generate random level
     int random_level();
 
+private:
+    NodePtr _header;
+    int _level;
+    const uint32_t kMaxLevel;
+    const float kProbability;
 };
 
 template<typename _T>
-SkipList<_T>::SkipList() {
+SkipList<_T>::SkipList(uint32_t max_level, float p) :
+        kMaxLevel(max_level), kProbability(p) {
     _level = 1;
-    _header = std::make_shared<Node>(_T(), SKIPLIST_MAXLEVEL);
-    std::srand(std::time(nullptr));
+    _header = std::make_shared<Node>(_T(), kMaxLevel);
 }
 
 template<typename _T>
@@ -59,8 +59,12 @@ SkipList<_T>::~SkipList() {
 
 template<typename _T>
 int SkipList<_T>::random_level() {
+    thread_local static std::random_device rd; // 随机设备
+    thread_local static std::mt19937 gen(rd()); // Mersenne Twister 引擎
+    // 定义浮点数范围的均匀分布
+    thread_local static std::uniform_real_distribution<float> distrib(0.0, 1.0);
     int lvl = 1;
-    while ((std::rand() / (float)RAND_MAX) < SKIPLIST_P && lvl < SKIPLIST_MAXLEVEL) {
+    while (distrib(gen) < kProbability && lvl < kMaxLevel) {
         lvl++;
     }
     return lvl;
@@ -84,7 +88,7 @@ typename SkipList<_T>::NodePtr SkipList<_T>::find(_T value) {
 template<typename _T>
 void SkipList<_T>::insert(_T value) {
     NodePtr current = _header;
-    std::vector<NodePtr> update(SKIPLIST_MAXLEVEL, nullptr);
+    std::vector<NodePtr> update(kMaxLevel, nullptr);
     // 查找每一层的插入位置
     for (int i = _level - 1; i >= 0; i--) {
         while (current->forward[i] != nullptr && current->forward[i]->value < value) {
@@ -113,7 +117,7 @@ void SkipList<_T>::insert(_T value) {
 template<typename _T>
 void SkipList<_T>::remove(_T value) {
     NodePtr current = _header;
-    std::vector<NodePtr> update(SKIPLIST_MAXLEVEL, nullptr);
+    std::vector<NodePtr> update(kMaxLevel, nullptr);
     // 查找每一层的删除位置
     for (int i = _level - 1; i >= 0; i--) {
         while (current->forward[i] != nullptr && current->forward[i]->value < value) {
